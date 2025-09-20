@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Admin {
+  admin_id  Int    @id @default(autoincrement())
+  username  String @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("admins")
+}
+
+model District {
+  district_id   Int    @id @default(autoincrement())
+  district_name String @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  citizens Citizen[]
+
+  @@map("districts")
+}
+
+model Citizen {
+  citizen_id  Int    @id @default(autoincrement())
+  customer_id String @unique
+  name        String
+  ward_no     String
+  district_id Int
+  city        String
+  state       String
+  contact_no  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  district    District     @relation(fields: [district_id], references: [district_id])
+  taxRecords  TaxRecord[]
+  payments    Payment[]
+  reminders   Reminder[]
+  penalties   Penalty[]
+
+  @@map("citizens")
+}
+
+model TaxRecord {
+  tax_id    Int      @id @default(autoincrement())
+  citizen_id Int
+  tax_year  String
+  amount    Float
+  due_date  DateTime
+  status    String   @default("unpaid") // unpaid, paid, overdue
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  citizen   Citizen   @relation(fields: [citizen_id], references: [citizen_id])
+  payments  Payment[]
+  penalties Penalty[]
+
+  @@map("tax_records")
+}
+
+model Payment {
+  payment_id   Int      @id @default(autoincrement())
+  tax_id       Int
+  citizen_id   Int
+  payment_date DateTime @default(now())
+  payment_mode String   // online, offline
+  receipt_no   String   @unique
+  amount       Float
+  status       String   @default("completed") // completed, pending, failed
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  taxRecord TaxRecord @relation(fields: [tax_id], references: [tax_id])
+  citizen   Citizen   @relation(fields: [citizen_id], references: [citizen_id])
+
+  @@map("payments")
+}
+
+model Reminder {
+  reminder_id    Int      @id @default(autoincrement())
+  citizen_id     Int
+  reminder_date  DateTime @default(now())
+  message        String
+  message_status String   @default("sent") // sent, failed, pending
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  citizen Citizen @relation(fields: [citizen_id], references: [citizen_id])
+
+  @@map("reminders")
+}
+
+model Penalty {
+  penalty_id     Int      @id @default(autoincrement())
+  citizen_id     Int
+  tax_id         Int
+  penalty_amount Float
+  penalty_date   DateTime @default(now())
+  status         String   @default("active") // active, waived, paid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  citizen   Citizen   @relation(fields: [citizen_id], references: [citizen_id])
+  taxRecord TaxRecord @relation(fields: [tax_id], references: [tax_id])
+
+  @@map("penalties")
+}
